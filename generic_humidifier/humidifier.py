@@ -1,7 +1,8 @@
 from typing import Optional, List, Any
 
 from homeassistant.components.humidifier import HumidifierEntity, DEVICE_CLASS_HUMIDIFIER
-from homeassistant.components.humidifier.const import MODE_AUTO, MODE_BOOST, SUPPORT_MODES, MODE_NORMAL, MODE_ECO
+from homeassistant.components.humidifier.const import MODE_AUTO, MODE_BOOST, SUPPORT_MODES, MODE_NORMAL, MODE_ECO, \
+    DOMAIN
 from homeassistant.core import State
 from homeassistant.helpers.event import async_track_state_change
 from homeassistant.helpers.restore_state import RestoreEntity
@@ -33,6 +34,7 @@ class GenericHumidifierEntity(HumidifierEntity, RestoreEntity):
         self._above_tolerance = float(config.get(ABOVE_TOLERANCE, 0))
         self._below_tolerance = float(config.get(BELOW_TOLERANCE, 0))
         self._first_cycle = True
+        self._current_mode = None
 
         self._modes_script = dict()
         self._available_modes = []
@@ -43,9 +45,9 @@ class GenericHumidifierEntity(HumidifierEntity, RestoreEntity):
         self._turn_off_action = config.get(OFF_ACTION, None)
         if self._turn_off_action:
             if isinstance(self._turn_off_action, list):
-                self._turn_off_script = Script(self._hass, self._turn_off_action)
+                self._turn_off_script = Script(self._hass, self._turn_off_action, self._unique_id, DOMAIN)
             else:
-                self._turn_off_script = Script(self._hass, [self._turn_off_action])
+                self._turn_off_script = Script(self._hass, [self._turn_off_action], self._unique_id, DOMAIN)
 
         self._humidity_sensor = config.get(HUMIDITY_SENSOR, None)
         if self._humidity_sensor:
@@ -59,9 +61,9 @@ class GenericHumidifierEntity(HumidifierEntity, RestoreEntity):
                 continue
 
             if isinstance(mode_action, list):
-                self._modes_script[mode] = Script(self._hass, mode_action)
+                self._modes_script[mode] = Script(self._hass, mode_action, self._unique_id, DOMAIN)
             else:
-                self._modes_script[mode] = Script(self._hass, [mode_action])
+                self._modes_script[mode] = Script(self._hass, [mode_action], self._unique_id, DOMAIN)
 
             self._available_modes.append(mode)
 
@@ -108,12 +110,16 @@ class GenericHumidifierEntity(HumidifierEntity, RestoreEntity):
                 self.__turn_on_mode(MODE_AUTO)
 
     def __turn_on_mode(self, mode):
+        if mode == self._current_mode:
+            return
         self._modes_script[mode].run()
+        self._current_mode = mode
 
     def __turn_off(self):
         if not self._turn_off_script:
             return
         self._turn_off_script.run()
+        self._current_mode = None
 
     @property
     def unique_id(self) -> Optional[str]:
@@ -183,6 +189,6 @@ class GenericHumidifierEntity(HumidifierEntity, RestoreEntity):
         await self.async_update_ha_state(True)
 
     def _init_properties(self, property_store):
-        self._humidity = property_store.get("humidity", None)
+        self._humidity = property_store.get("humidity", 0)
         self._mode = property_store.get("mode", MODE_AUTO)
         self._power = property_store.get("power", False)
