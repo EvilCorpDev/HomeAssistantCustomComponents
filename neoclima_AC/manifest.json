@@ -1,0 +1,9 @@
+{
+  "domain": "neoclima",
+  "name": "Integration with neoclima binary protocol",
+  "documentation": "",
+  "dependencies": [
+    "sensor"
+  ],
+  "codeowners": []
+}

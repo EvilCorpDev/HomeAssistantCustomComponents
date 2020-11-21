@@ -1,0 +1,1 @@
+"""Stub media player for homekit"""
