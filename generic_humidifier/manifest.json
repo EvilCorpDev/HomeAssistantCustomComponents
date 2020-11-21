@@ -1,0 +1,7 @@
+{
+  "domain": "generic_humidifier",
+  "name": "Generic humidifier implementation",
+  "documentation": "",
+  "dependencies": ["sensor"],
+  "codeowners": []
+}
