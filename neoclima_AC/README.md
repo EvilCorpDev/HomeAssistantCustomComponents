@@ -1,1 +1,1 @@
-Integration with neoclima binary protocol
+Integration with neoclima AC binary protocol
